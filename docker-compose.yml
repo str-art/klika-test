@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  db:
+    image: postgres
+    container_name: database
+    volumes:
+      - ./seeds.sql:/docker-entrypoint-initdb.d/seeds.sql
+    expose:
+      - ${DATABASE_PORT}
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_DB=${DATABASE}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    restart: always
+    command: ["postgres", "-c", "log_statement=all"]
+  api:
+    build: ./backend
+    container_name: api
+    expose:
+      - ${APP_PORT}
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE=${DATABASE}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - SERVER_PORT=${APP_PORT}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_SECRET=${S3_SECRET}
+      - S3_KEY=${S3_KEY}
+      - S3_ENDPOINT=${S3_KEY}
+    restart: always
+    depends_on:
+      - db
+    command: ["node", "index"]
+  frontend:
+    build: ./frontend
+    container_name: client
+    ports:
+      - 80:80
+    environment:
+      - NGINX_HOST=api
+      - NGINX_PORT=${APP_PORT}
+    restart: always
+    depends_on:
+      - api
